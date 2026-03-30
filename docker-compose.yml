@@ -1,0 +1,54 @@
+# ============================================================
+# docker-compose.yml for NewsApp
+# Runs the Django app and MariaDB database together
+# ============================================================
+
+services:
+
+  # MariaDB database service
+  db:
+    image: mariadb:10.11
+    restart: always
+    environment:
+      MYSQL_DATABASE: newsapp_db
+      MYSQL_USER: newsapp_user
+      MYSQL_PASSWORD: newsapp_password
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Django web application service
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py setup_news_groups &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: django-insecure-docker-secret-key-change-in-production
+      DEBUG: "True"
+      DB_NAME: newsapp_db
+      DB_USER: newsapp_user
+      DB_PASSWORD: newsapp_password
+      DB_HOST: db
+      DB_PORT: "3306"
+      EMAIL_HOST_USER: ""
+      EMAIL_HOST_PASSWORD: ""
+    depends_on:
+      db:
+        condition: service_healthy
+
+# Persistent volume for database data
+volumes:
+  mariadb_data:
