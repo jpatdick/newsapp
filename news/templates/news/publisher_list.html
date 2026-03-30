@@ -1,0 +1,29 @@
+{% extends 'news/base.html' %}
+{% block title %}Publishers - NewsApp{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Publishers</h1>
+    {% if user.role == 'editor' %}<a href="{% url 'create_publisher' %}" class="btn btn-primary">+ New Publisher</a>{% endif %}
+</div>
+{% if publishers %}
+<div class="grid-2">
+{% for pub in publishers %}
+    <div class="card">
+        <div class="card-title">{{ pub.name }}</div>
+        {% if pub.description %}<p style="font-size:.88rem; color:#555; margin:.4rem 0;">{{ pub.description }}</p>{% endif %}
+        {% if pub.website %}<p style="font-size:.82rem; margin:.3rem 0;"><a href="{{ pub.website }}" target="_blank">{{ pub.website }}</a></p>{% endif %}
+        <div style="margin-top:.8rem; display:flex; gap:.6rem;">
+            {% if user.role == 'reader' %}
+                <a href="{% url 'subscribe_publisher' pub.pk %}" class="btn btn-primary btn-sm">Toggle Subscription</a>
+            {% endif %}
+            {% if user.role == 'editor' %}
+                <a href="{% url 'edit_publisher' pub.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            {% endif %}
+        </div>
+    </div>
+{% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center; color:#888; padding:3rem;">No publishers yet.</div>
+{% endif %}
+{% endblock %}

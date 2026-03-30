@@ -1,0 +1,28 @@
+{% extends 'news/base.html' %}
+{% block title %}{{ newsletter.title }} - NewsApp{% endblock %}
+{% block content %}
+<a href="{% url 'newsletter_list' %}" style="font-size:.88rem;">← Back to newsletters</a>
+{% if user.role == 'editor' or user == newsletter.author %}
+<div style="display:inline-flex; gap:.6rem; margin-left:1rem;">
+    <a href="{% url 'edit_newsletter' newsletter.pk %}" class="btn btn-primary btn-sm">Edit</a>
+    <a href="{% url 'delete_newsletter' newsletter.pk %}" class="btn btn-danger btn-sm">Delete</a>
+</div>
+{% endif %}
+<div class="card" style="margin-top:1rem;">
+    <h1 style="font-size:1.6rem; margin-bottom:.4rem;">{{ newsletter.title }}</h1>
+    <div class="card-meta" style="margin-bottom:1rem;">
+        By <strong>{{ newsletter.author.get_full_name|default:newsletter.author.username }}</strong>
+        · {{ newsletter.created_at|date:"d F Y" }}
+    </div>
+    {% if newsletter.description %}<p style="margin-bottom:1.5rem; color:#555;">{{ newsletter.description }}</p>{% endif %}
+    <h2 style="font-size:1.1rem; margin-bottom:.8rem;">Articles ({{ newsletter.articles.count }})</h2>
+    {% for article in newsletter.articles.all %}
+        <div style="border-top:1px solid #eee; padding:.8rem 0;">
+            <a href="{% url 'article_detail' article.pk %}" style="font-weight:600;">{{ article.title }}</a>
+            <div style="font-size:.82rem; color:#777; margin-top:.2rem;">{{ article.author.username }} · {{ article.created_at|date:"d M Y" }}</div>
+        </div>
+    {% empty %}
+        <p style="color:#888;">No articles in this newsletter.</p>
+    {% endfor %}
+</div>
+{% endblock %}

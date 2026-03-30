@@ -1,0 +1,32 @@
+{% extends 'news/base.html' %}
+{% block title %}Editor Dashboard - NewsApp{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Editor Dashboard</h1>
+    <span style="font-size:.9rem; color:#666;">{{ articles|length }} article(s) pending</span>
+</div>
+{% if articles %}
+    {% for article in articles %}
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:.8rem;">
+            <div style="flex:1;">
+                <span class="badge badge-pending">Pending</span>
+                <div class="card-title"><a href="{% url 'article_detail' article.pk %}">{{ article.title }}</a></div>
+                <div class="card-meta">By {{ article.author.get_full_name|default:article.author.username }} · {{ article.created_at|date:"d M Y" }}</div>
+                <p style="font-size:.88rem; color:#555; margin-top:.5rem;">{{ article.content|truncatechars:200 }}</p>
+            </div>
+            <div style="display:flex; gap:.6rem;">
+                <a href="{% url 'article_detail' article.pk %}" class="btn btn-secondary btn-sm">Review</a>
+                <a href="{% url 'edit_article' article.pk %}" class="btn btn-primary btn-sm">Edit</a>
+                <form method="post" action="{% url 'approve_article' article.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="card" style="text-align:center; color:#888; padding:3rem;">All articles reviewed. Nothing pending.</div>
+{% endif %}
+{% endblock %}

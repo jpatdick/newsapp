@@ -1,0 +1,26 @@
+{% extends 'news/base.html' %}
+{% block title %}{{ article.title }} - NewsApp{% endblock %}
+{% block content %}
+<div style="max-width:780px; margin:0 auto;">
+    <a href="{% url 'articles' %}" style="font-size:.88rem;">← Back to articles</a>
+    <div class="card" style="margin-top:1rem;">
+        <div style="margin-bottom:.6rem;">
+            {% if article.approved %}<span class="badge badge-approved">Published</span>{% else %}<span class="badge badge-pending">Pending</span>{% endif %}
+        </div>
+        <h1 style="font-size:1.8rem; margin-bottom:.5rem;">{{ article.title }}</h1>
+        <div style="font-size:.85rem; color:#777; margin-bottom:1.5rem;">
+            By <strong>{{ article.author.get_full_name|default:article.author.username }}</strong> &nbsp;·&nbsp; {{ article.created_at|date:"d F Y" }}
+        </div>
+        <div style="line-height:1.75; font-size:.97rem; white-space:pre-wrap;">{{ article.content }}</div>
+        <div style="margin-top:2rem; display:flex; gap:.8rem;">
+            {% if user.role == 'editor' and not article.approved %}
+                <form method="post" action="{% url 'approve_article' article.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">Approve Article</button>
+                </form>
+            {% endif %}
+            {% if user.role == 'editor' %}<a href="{% url 'edit_article' article.pk %}" class="btn btn-primary">Edit</a>{% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
