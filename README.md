@@ -199,6 +199,65 @@ python manage.py runserver
 
 ---
 
+## Setup with Docker
+
+If you have [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/) installed, you can bring up the entire application — including a MariaDB database — with a single command, skipping the 12-step manual setup entirely.
+
+### Prerequisites
+
+- Docker Desktop (or Docker Engine + Docker Compose CLI) installed and running.
+- A copy of the repository cloned locally.
+
+### 1. Configure email credentials (optional)
+
+The application sends approval notification emails via Gmail SMTP. If you want
+email notifications to work, open `docker-compose.yml` and fill in your
+credentials in the `web` service's `environment` block:
+
+```yaml
+EMAIL_HOST_USER: your_gmail@gmail.com
+EMAIL_HOST_PASSWORD: your_16_character_app_password
+```
+
+If you leave these blank the app will still run; only approval email delivery
+will be skipped.
+
+### 2. Launch the environment
+
+From the project root (the folder containing `docker-compose.yml`), run:
+
+```bash
+docker-compose up --build
+```
+
+This single command will:
+
+1. Build the Django application image from the `Dockerfile`.
+2. Pull and start a MariaDB 10.11 container.
+3. Wait for the database to pass its health check before starting Django.
+4. Run `python manage.py migrate` to apply all database migrations automatically.
+5. Run `python manage.py setup_news_groups` to create the Reader, Journalist, and Editor permission groups automatically.
+6. Start the Django development server on `http://localhost:8000`.
+
+### 3. Create a superuser (optional)
+
+To access the Django admin panel at `/admin/`, open a second terminal and run:
+
+```bash
+docker-compose exec web python manage.py createsuperuser
+```
+
+### 4. Stop the environment
+
+Press `Ctrl+C` in the terminal running Compose, then run:
+
+```bash
+docker-compose down
+```
+
+Database data is persisted in a named Docker volume (`mariadb_data`), so your
+data will still be there the next time you run `docker-compose up`.
+
 ## Creating Publishers
 
 Publishers must be created before journalists can associate their articles with
