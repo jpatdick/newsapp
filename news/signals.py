@@ -12,8 +12,9 @@ Two responsibilities
 2. article_approved (post_save on Article)
    Fires when an Article record is saved. When the article transitions
    to approved=True for the FIRST TIME, this handler:
-     a) Emails every subscriber of the article's journalist or publisher.
-     b) POSTs the approved article payload to /api/approved/ for logging.
+
+   a) Emails every subscriber of the article's journalist or publisher.
+   b) POSTs the approved article payload to /api/approved/ for logging.
 
    The handler tracks first-time approval using the 'created' flag and
    by comparing against the pre-save value stored in the instance to
@@ -26,11 +27,10 @@ import logging
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.mail import send_mail
-from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
-from .models import Article, CustomUser, Newsletter, Publisher, Role
+from .models import Article, CustomUser, Newsletter, Role
 
 logger = logging.getLogger(__name__)
 
@@ -86,14 +86,16 @@ def setup_groups():
 
     This function is safe to call multiple times; get_or_create ensures
     no duplicate groups are created. It is called:
-      - By the management command `setup_news_groups`.
-      - By the assign_user_group signal on every user save (via try/except).
-      - By register_view after a new user is created.
+
+    - By the management command ``setup_news_groups``.
+    - By the assign_user_group signal on every user save (via try/except).
+    - By register_view after a new user is created.
 
     Permission layout:
-      Reader     - view only (no content creation or modification)
-      Editor     - view, change, delete (approve workflow, no article creation)
-      Journalist - view, add, change, delete (full CRUD on own content)
+
+    - Reader: view only (no content creation or modification)
+    - Editor: view, change, delete (approve workflow, no article creation)
+    - Journalist: view, add, change, delete (full CRUD on own content)
     """
     # -- Reader group: view-only permissions ---------------------------------
     reader_group, _ = Group.objects.get_or_create(name='Reader')

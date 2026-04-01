@@ -6,8 +6,21 @@
 import os
 import sys
 import django
+
 sys.path.insert(0, os.path.abspath('..'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'newsproject.settings'
+
+# Override the database to SQLite so Sphinx can run without a live MariaDB
+# instance. The documentation build only needs model introspection, not an
+# actual database connection. This must be done before django.setup().
+os.environ.setdefault('SPHINX_BUILD', '1')
+
+from django.conf import settings  # noqa: E402
+settings.DATABASES['default'] = {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': ':memory:',
+}
+
 django.setup()
 
 # -- Project information -----------------------------------------------------

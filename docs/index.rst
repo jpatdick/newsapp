@@ -1,17 +1,25 @@
-.. NewsApp documentation master file, created by
-   sphinx-quickstart on Mon Mar 30 19:31:17 2026.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-NewsApp documentation
+NewsApp Documentation
 =====================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
-
+A full-featured Django news platform with role-based access control,
+a RESTful API (JWT-authenticated), and automated tests.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   modules/models
+   modules/views
+   modules/api_views
+   modules/serializers
+   modules/permissions
+   modules/forms
+   modules/signals
+   modules/admin
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

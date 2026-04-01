@@ -8,3 +8,4 @@ requests>=2.31
 mysqlclient>=2.1        # MariaDB/MySQL database driver
 Pillow>=10.0            # optional: for image fields
 django-filter>=23       # optional: for filtering querysets in DRF
+python-dotenv>=1.0      # loads environment variables from .env file
