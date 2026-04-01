@@ -608,7 +608,7 @@ class SubscribedArticlesTests(BaseTestCase):
         self
     ):
         """Reader subscribed to a publisher sees publisher articles."""
-        publisher_article = self._create_article(
+        self._create_article(
             self.journalist2,
             publisher=self.publisher,
             approved=True,

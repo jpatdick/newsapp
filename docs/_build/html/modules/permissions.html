@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>news.permissions &#8212; NewsApp 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="news.forms" href="forms.html" />
+    <link rel="prev" title="news.serializers" href="serializers.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-news.permissions">
+<span id="news-permissions"></span><h1>news.permissions<a class="headerlink" href="#module-news.permissions" title="Link to this heading">¶</a></h1>
+<p>permissions.py - Custom DRF permission classes.</p>
+<p>Enforces role-based access control at the API layer, complementing
+the Django auth Group permissions assigned in signals.py.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="news.permissions.IsEditor">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.permissions.</span></span><span class="sig-name descname"><span class="pre">IsEditor</span></span><a class="reference internal" href="../_modules/news/permissions.html#IsEditor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.permissions.IsEditor" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BasePermission</span></code></p>
+<p>Allow access only to users with the Editor role.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="news.permissions.IsEditor.has_permission">
+<span class="sig-name descname"><span class="pre">has_permission</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/permissions.html#IsEditor.has_permission"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.permissions.IsEditor.has_permission" title="Link to this definition">¶</a></dt>
+<dd><p>Return <cite>True</cite> if permission is granted, <cite>False</cite> otherwise.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.permissions.IsEditor.message">
+<span class="sig-name descname"><span class="pre">message</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Only</span> <span class="pre">editors</span> <span class="pre">can</span> <span class="pre">perform</span> <span class="pre">this</span> <span class="pre">action.'</span></span><a class="headerlink" href="#news.permissions.IsEditor.message" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.permissions.IsJournalist">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.permissions.</span></span><span class="sig-name descname"><span class="pre">IsJournalist</span></span><a class="reference internal" href="../_modules/news/permissions.html#IsJournalist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.permissions.IsJournalist" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BasePermission</span></code></p>
+<p>Allow access only to users with the Journalist role.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="news.permissions.IsJournalist.has_permission">
+<span class="sig-name descname"><span class="pre">has_permission</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/permissions.html#IsJournalist.has_permission"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.permissions.IsJournalist.has_permission" title="Link to this definition">¶</a></dt>
+<dd><p>Return <cite>True</cite> if permission is granted, <cite>False</cite> otherwise.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.permissions.IsJournalist.message">
+<span class="sig-name descname"><span class="pre">message</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Only</span> <span class="pre">journalists</span> <span class="pre">can</span> <span class="pre">perform</span> <span class="pre">this</span> <span class="pre">action.'</span></span><a class="headerlink" href="#news.permissions.IsJournalist.message" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.permissions.IsJournalistOrEditor">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.permissions.</span></span><span class="sig-name descname"><span class="pre">IsJournalistOrEditor</span></span><a class="reference internal" href="../_modules/news/permissions.html#IsJournalistOrEditor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.permissions.IsJournalistOrEditor" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BasePermission</span></code></p>
+<p>Allow access to journalists and editors.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="news.permissions.IsJournalistOrEditor.has_permission">
+<span class="sig-name descname"><span class="pre">has_permission</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/permissions.html#IsJournalistOrEditor.has_permission"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.permissions.IsJournalistOrEditor.has_permission" title="Link to this definition">¶</a></dt>
+<dd><p>Return <cite>True</cite> if permission is granted, <cite>False</cite> otherwise.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.permissions.IsJournalistOrEditor.message">
+<span class="sig-name descname"><span class="pre">message</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Only</span> <span class="pre">journalists</span> <span class="pre">or</span> <span class="pre">editors</span> <span class="pre">can</span> <span class="pre">perform</span> <span class="pre">this</span> <span class="pre">action.'</span></span><a class="headerlink" href="#news.permissions.IsJournalistOrEditor.message" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.permissions.IsOwnerOrEditor">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.permissions.</span></span><span class="sig-name descname"><span class="pre">IsOwnerOrEditor</span></span><a class="reference internal" href="../_modules/news/permissions.html#IsOwnerOrEditor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.permissions.IsOwnerOrEditor" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BasePermission</span></code></p>
+<dl class="simple">
+<dt>Object-level permission:</dt><dd><ul class="simple">
+<li><p>Editors can access any object.</p></li>
+<li><p>Journalists can only access objects they authored.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="news.permissions.IsOwnerOrEditor.has_object_permission">
+<span class="sig-name descname"><span class="pre">has_object_permission</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/permissions.html#IsOwnerOrEditor.has_object_permission"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.permissions.IsOwnerOrEditor.has_object_permission" title="Link to this definition">¶</a></dt>
+<dd><p>Return <cite>True</cite> if permission is granted, <cite>False</cite> otherwise.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.permissions.IsOwnerOrEditor.message">
+<span class="sig-name descname"><span class="pre">message</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'You</span> <span class="pre">do</span> <span class="pre">not</span> <span class="pre">have</span> <span class="pre">permission</span> <span class="pre">to</span> <span class="pre">modify</span> <span class="pre">this</span> <span class="pre">object.'</span></span><a class="headerlink" href="#news.permissions.IsOwnerOrEditor.message" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.permissions.ReadOnly">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.permissions.</span></span><span class="sig-name descname"><span class="pre">ReadOnly</span></span><a class="reference internal" href="../_modules/news/permissions.html#ReadOnly"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.permissions.ReadOnly" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BasePermission</span></code></p>
+<p>Permits GET, HEAD, and OPTIONS requests only.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="news.permissions.ReadOnly.has_permission">
+<span class="sig-name descname"><span class="pre">has_permission</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/permissions.html#ReadOnly.has_permission"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.permissions.ReadOnly.has_permission" title="Link to this definition">¶</a></dt>
+<dd><p>Return <cite>True</cite> if permission is granted, <cite>False</cite> otherwise.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">NewsApp</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="models.html">news.models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="views.html">news.views</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_views.html">news.api_views</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serializers.html">news.serializers</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">news.permissions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#news.permissions.IsEditor"><code class="docutils literal notranslate"><span class="pre">IsEditor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.permissions.IsJournalist"><code class="docutils literal notranslate"><span class="pre">IsJournalist</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.permissions.IsJournalistOrEditor"><code class="docutils literal notranslate"><span class="pre">IsJournalistOrEditor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.permissions.IsOwnerOrEditor"><code class="docutils literal notranslate"><span class="pre">IsOwnerOrEditor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.permissions.ReadOnly"><code class="docutils literal notranslate"><span class="pre">ReadOnly</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="forms.html">news.forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">news.signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="admin.html">news.admin</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="serializers.html" title="previous chapter">news.serializers</a></li>
+      <li>Next: <a href="forms.html" title="next chapter">news.forms</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Jerry Dickerson.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/modules/permissions.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

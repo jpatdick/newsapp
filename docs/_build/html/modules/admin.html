@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>news.admin &#8212; NewsApp 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="news.signals" href="signals.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-news.admin">
+<span id="news-admin"></span><h1>news.admin<a class="headerlink" href="#module-news.admin" title="Link to this heading">¶</a></h1>
+<p>admin.py - Django admin configuration for the News application.
+Registers all models with sensible list displays and filters.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="news.admin.ArticleAdmin">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.admin.</span></span><span class="sig-name descname"><span class="pre">ArticleAdmin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">admin_site</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/admin.html#ArticleAdmin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.admin.ArticleAdmin" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ModelAdmin</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.ArticleAdmin.actions">
+<span class="sig-name descname"><span class="pre">actions</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['approve_articles']</span></span><a class="headerlink" href="#news.admin.ArticleAdmin.actions" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.admin.ArticleAdmin.approve_articles">
+<span class="sig-name descname"><span class="pre">approve_articles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queryset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/admin.html#ArticleAdmin.approve_articles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.admin.ArticleAdmin.approve_articles" title="Link to this definition">¶</a></dt>
+<dd><p>Bulk-approve selected articles from the admin interface.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.ArticleAdmin.list_display">
+<span class="sig-name descname"><span class="pre">list_display</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('title',</span> <span class="pre">'author',</span> <span class="pre">'publisher',</span> <span class="pre">'approved',</span> <span class="pre">'created_at')</span></span><a class="headerlink" href="#news.admin.ArticleAdmin.list_display" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.ArticleAdmin.list_filter">
+<span class="sig-name descname"><span class="pre">list_filter</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('approved',</span> <span class="pre">'publisher',</span> <span class="pre">'created_at')</span></span><a class="headerlink" href="#news.admin.ArticleAdmin.list_filter" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="news.admin.ArticleAdmin.media">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">media</span></span><a class="headerlink" href="#news.admin.ArticleAdmin.media" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.ArticleAdmin.ordering">
+<span class="sig-name descname"><span class="pre">ordering</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('-created_at',)</span></span><a class="headerlink" href="#news.admin.ArticleAdmin.ordering" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.ArticleAdmin.search_fields">
+<span class="sig-name descname"><span class="pre">search_fields</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('title',</span> <span class="pre">'author__username',</span> <span class="pre">'content')</span></span><a class="headerlink" href="#news.admin.ArticleAdmin.search_fields" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.admin.CustomUserAdmin">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.admin.</span></span><span class="sig-name descname"><span class="pre">CustomUserAdmin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">admin_site</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/admin.html#CustomUserAdmin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.admin.CustomUserAdmin" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">UserAdmin</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.CustomUserAdmin.add_fieldsets">
+<span class="sig-name descname"><span class="pre">add_fieldsets</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">((None,</span> <span class="pre">{'classes':</span> <span class="pre">('wide',),</span> <span class="pre">'fields':</span> <span class="pre">('username',</span> <span class="pre">'usable_password',</span> <span class="pre">'password1',</span> <span class="pre">'password2')}),</span> <span class="pre">('News</span> <span class="pre">App',</span> <span class="pre">{'fields':</span> <span class="pre">('role',</span> <span class="pre">'publisher')}))</span></span><a class="headerlink" href="#news.admin.CustomUserAdmin.add_fieldsets" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.CustomUserAdmin.fieldsets">
+<span class="sig-name descname"><span class="pre">fieldsets</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">((None,</span> <span class="pre">{'fields':</span> <span class="pre">('username',</span> <span class="pre">'password')}),</span> <span class="pre">('Personal</span> <span class="pre">info',</span> <span class="pre">{'fields':</span> <span class="pre">('first_name',</span> <span class="pre">'last_name',</span> <span class="pre">'email')}),</span> <span class="pre">('Permissions',</span> <span class="pre">{'fields':</span> <span class="pre">('is_active',</span> <span class="pre">'is_staff',</span> <span class="pre">'is_superuser',</span> <span class="pre">'groups',</span> <span class="pre">'user_permissions')}),</span> <span class="pre">('Important</span> <span class="pre">dates',</span> <span class="pre">{'fields':</span> <span class="pre">('last_login',</span> <span class="pre">'date_joined')}),</span> <span class="pre">('News</span> <span class="pre">App',</span> <span class="pre">{'fields':</span> <span class="pre">('role',</span> <span class="pre">'publisher',</span> <span class="pre">'subscribed_publishers',</span> <span class="pre">'subscribed_journalists')}))</span></span><a class="headerlink" href="#news.admin.CustomUserAdmin.fieldsets" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.CustomUserAdmin.list_display">
+<span class="sig-name descname"><span class="pre">list_display</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('username',</span> <span class="pre">'email',</span> <span class="pre">'role',</span> <span class="pre">'publisher',</span> <span class="pre">'is_active')</span></span><a class="headerlink" href="#news.admin.CustomUserAdmin.list_display" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.CustomUserAdmin.list_filter">
+<span class="sig-name descname"><span class="pre">list_filter</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('role',</span> <span class="pre">'publisher',</span> <span class="pre">'is_active')</span></span><a class="headerlink" href="#news.admin.CustomUserAdmin.list_filter" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="news.admin.CustomUserAdmin.media">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">media</span></span><a class="headerlink" href="#news.admin.CustomUserAdmin.media" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.CustomUserAdmin.ordering">
+<span class="sig-name descname"><span class="pre">ordering</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('username',)</span></span><a class="headerlink" href="#news.admin.CustomUserAdmin.ordering" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.CustomUserAdmin.search_fields">
+<span class="sig-name descname"><span class="pre">search_fields</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('username',</span> <span class="pre">'email',</span> <span class="pre">'first_name',</span> <span class="pre">'last_name')</span></span><a class="headerlink" href="#news.admin.CustomUserAdmin.search_fields" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.admin.NewsletterAdmin">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.admin.</span></span><span class="sig-name descname"><span class="pre">NewsletterAdmin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">admin_site</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/admin.html#NewsletterAdmin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.admin.NewsletterAdmin" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ModelAdmin</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.NewsletterAdmin.filter_horizontal">
+<span class="sig-name descname"><span class="pre">filter_horizontal</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('articles',)</span></span><a class="headerlink" href="#news.admin.NewsletterAdmin.filter_horizontal" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.NewsletterAdmin.list_display">
+<span class="sig-name descname"><span class="pre">list_display</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('title',</span> <span class="pre">'author',</span> <span class="pre">'created_at')</span></span><a class="headerlink" href="#news.admin.NewsletterAdmin.list_display" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="news.admin.NewsletterAdmin.media">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">media</span></span><a class="headerlink" href="#news.admin.NewsletterAdmin.media" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.NewsletterAdmin.ordering">
+<span class="sig-name descname"><span class="pre">ordering</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('-created_at',)</span></span><a class="headerlink" href="#news.admin.NewsletterAdmin.ordering" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.NewsletterAdmin.search_fields">
+<span class="sig-name descname"><span class="pre">search_fields</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('title',</span> <span class="pre">'author__username')</span></span><a class="headerlink" href="#news.admin.NewsletterAdmin.search_fields" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.admin.PublisherAdmin">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.admin.</span></span><span class="sig-name descname"><span class="pre">PublisherAdmin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">admin_site</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/admin.html#PublisherAdmin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.admin.PublisherAdmin" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ModelAdmin</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.PublisherAdmin.list_display">
+<span class="sig-name descname"><span class="pre">list_display</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('name',</span> <span class="pre">'website',</span> <span class="pre">'created_at')</span></span><a class="headerlink" href="#news.admin.PublisherAdmin.list_display" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="news.admin.PublisherAdmin.media">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">media</span></span><a class="headerlink" href="#news.admin.PublisherAdmin.media" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.PublisherAdmin.ordering">
+<span class="sig-name descname"><span class="pre">ordering</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('name',)</span></span><a class="headerlink" href="#news.admin.PublisherAdmin.ordering" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.admin.PublisherAdmin.search_fields">
+<span class="sig-name descname"><span class="pre">search_fields</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('name',)</span></span><a class="headerlink" href="#news.admin.PublisherAdmin.search_fields" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">NewsApp</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="models.html">news.models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="views.html">news.views</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_views.html">news.api_views</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serializers.html">news.serializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="permissions.html">news.permissions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forms.html">news.forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">news.signals</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">news.admin</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#news.admin.ArticleAdmin"><code class="docutils literal notranslate"><span class="pre">ArticleAdmin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.admin.CustomUserAdmin"><code class="docutils literal notranslate"><span class="pre">CustomUserAdmin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.admin.NewsletterAdmin"><code class="docutils literal notranslate"><span class="pre">NewsletterAdmin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.admin.PublisherAdmin"><code class="docutils literal notranslate"><span class="pre">PublisherAdmin</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="signals.html" title="previous chapter">news.signals</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Jerry Dickerson.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/modules/admin.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -413,9 +413,11 @@ def edit_article_view(request, pk):
     Allow a journalist (owner) or editor to edit an existing article.
 
     Journalist-specific access restrictions are validated through
-    _check_journalist_article_access(), which checks:
-      - The journalist must be the article's author.
-      - The article must not yet be approved (published).
+    ``_check_journalist_article_access()``, which checks:
+
+    - The journalist must be the article's author.
+    - The article must not yet be approved (published).
+
     These checks are centralised in the helper to keep this view concise.
     """
     article = get_object_or_404(Article, pk=pk)

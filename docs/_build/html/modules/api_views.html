@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>news.api_views &#8212; NewsApp 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="news.serializers" href="serializers.html" />
+    <link rel="prev" title="news.views" href="views.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-news.api_views">
+<span id="news-api-views"></span><h1>news.api_views<a class="headerlink" href="#module-news.api_views" title="Link to this heading">¶</a></h1>
+<p>api_views.py - Django REST Framework views for the News application.</p>
+<section id="endpoints-implemented">
+<h2>Endpoints implemented<a class="headerlink" href="#endpoints-implemented" title="Link to this heading">¶</a></h2>
+<p>GET    /api/articles/              - List all approved articles
+GET    /api/articles/subscribed/   - Articles from subscribed sources
+GET    /api/articles/&lt;id&gt;/         - Retrieve a single article
+POST   /api/articles/              - Create article (journalists only)
+PUT    /api/articles/&lt;id&gt;/         - Update article (owner / editor)
+DELETE /api/articles/&lt;id&gt;/         - Delete article (owner / editor)
+POST   /api/articles/&lt;id&gt;/approve/ - Approve article (editors only)</p>
+<p>GET    /api/newsletters/           - List all newsletters
+GET    /api/newsletters/&lt;id&gt;/      - Retrieve a single newsletter
+POST   /api/newsletters/           - Create newsletter (journalists)
+PUT    /api/newsletters/&lt;id&gt;/      - Update newsletter
+DELETE /api/newsletters/&lt;id&gt;/      - Delete newsletter</p>
+<p>POST   /api/approved/              - Internal approval webhook
+POST   /api/register/              - Register a new user</p>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="news.api_views.ApprovedArticleWebhookView">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.api_views.</span></span><span class="sig-name descname"><span class="pre">ApprovedArticleWebhookView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ApprovedArticleWebhookView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ApprovedArticleWebhookView" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>POST /api/approved/
+Internal endpoint that receives approved article data from the signal.
+AllowAny because the signal sends an unauthenticated internal request.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.api_views.ApprovedArticleWebhookView.permission_classes">
+<span class="sig-name descname"><span class="pre">permission_classes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;class</span> <span class="pre">'rest_framework.permissions.AllowAny'&gt;]</span></span><a class="headerlink" href="#news.api_views.ApprovedArticleWebhookView.permission_classes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.ApprovedArticleWebhookView.post">
+<span class="sig-name descname"><span class="pre">post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ApprovedArticleWebhookView.post"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ApprovedArticleWebhookView.post" title="Link to this definition">¶</a></dt>
+<dd><p>Log the approved article payload received from the signal.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.api_views.ArticleApproveView">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.api_views.</span></span><span class="sig-name descname"><span class="pre">ArticleApproveView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ArticleApproveView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ArticleApproveView" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>POST /api/articles/&lt;id&gt;/approve/
+Allows an editor to approve an article for publication.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.api_views.ArticleApproveView.permission_classes">
+<span class="sig-name descname"><span class="pre">permission_classes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;class</span> <span class="pre">'rest_framework.permissions.IsAuthenticated'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'news.permissions.IsEditor'&gt;]</span></span><a class="headerlink" href="#news.api_views.ArticleApproveView.permission_classes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.ArticleApproveView.post">
+<span class="sig-name descname"><span class="pre">post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ArticleApproveView.post"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ArticleApproveView.post" title="Link to this definition">¶</a></dt>
+<dd><p>Approve the specified article.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.api_views.ArticleDetailView">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.api_views.</span></span><span class="sig-name descname"><span class="pre">ArticleDetailView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ArticleDetailView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ArticleDetailView" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>GET    - Retrieve a single article (any authenticated user).
+PUT    - Update an article (editor or owning journalist).
+DELETE - Delete an article (editor or owning journalist).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.ArticleDetailView.delete">
+<span class="sig-name descname"><span class="pre">delete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ArticleDetailView.delete"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ArticleDetailView.delete" title="Link to this definition">¶</a></dt>
+<dd><p>Delete an article (editor or owning journalist only).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.ArticleDetailView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ArticleDetailView.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ArticleDetailView.get" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve a single article by primary key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.ArticleDetailView.get_permissions">
+<span class="sig-name descname"><span class="pre">get_permissions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ArticleDetailView.get_permissions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ArticleDetailView.get_permissions" title="Link to this definition">¶</a></dt>
+<dd><p>Instantiates and returns the list of permissions that this view requires.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.ArticleDetailView.put">
+<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ArticleDetailView.put"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ArticleDetailView.put" title="Link to this definition">¶</a></dt>
+<dd><p>Update an article (editor or owning journalist only).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.api_views.ArticleListCreateView">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.api_views.</span></span><span class="sig-name descname"><span class="pre">ArticleListCreateView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ArticleListCreateView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ArticleListCreateView" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>GET  - Return all approved articles (any authenticated user).
+POST - Create a new article (journalists only).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.ArticleListCreateView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ArticleListCreateView.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ArticleListCreateView.get" title="Link to this definition">¶</a></dt>
+<dd><p>Return a list of all approved articles.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.ArticleListCreateView.get_permissions">
+<span class="sig-name descname"><span class="pre">get_permissions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ArticleListCreateView.get_permissions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ArticleListCreateView.get_permissions" title="Link to this definition">¶</a></dt>
+<dd><p>Instantiates and returns the list of permissions that this view requires.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.ArticleListCreateView.post">
+<span class="sig-name descname"><span class="pre">post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#ArticleListCreateView.post"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.ArticleListCreateView.post" title="Link to this definition">¶</a></dt>
+<dd><p>Create a new article; author is forced to the current user.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.api_views.NewsletterDetailView">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.api_views.</span></span><span class="sig-name descname"><span class="pre">NewsletterDetailView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#NewsletterDetailView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.NewsletterDetailView" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>GET    - Retrieve a single newsletter.
+PUT    - Update a newsletter (editor or owning journalist).
+DELETE - Delete a newsletter (editor or owning journalist).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.NewsletterDetailView.delete">
+<span class="sig-name descname"><span class="pre">delete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#NewsletterDetailView.delete"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.NewsletterDetailView.delete" title="Link to this definition">¶</a></dt>
+<dd><p>Delete a newsletter (editor or owning journalist only).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.NewsletterDetailView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#NewsletterDetailView.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.NewsletterDetailView.get" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve a single newsletter by primary key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.NewsletterDetailView.get_permissions">
+<span class="sig-name descname"><span class="pre">get_permissions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#NewsletterDetailView.get_permissions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.NewsletterDetailView.get_permissions" title="Link to this definition">¶</a></dt>
+<dd><p>Instantiates and returns the list of permissions that this view requires.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.NewsletterDetailView.put">
+<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#NewsletterDetailView.put"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.NewsletterDetailView.put" title="Link to this definition">¶</a></dt>
+<dd><p>Update a newsletter (editor or owning journalist only).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.api_views.NewsletterListCreateView">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.api_views.</span></span><span class="sig-name descname"><span class="pre">NewsletterListCreateView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#NewsletterListCreateView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.NewsletterListCreateView" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>GET  - List all newsletters (any authenticated user).
+POST - Create a newsletter (journalists only).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.NewsletterListCreateView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#NewsletterListCreateView.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.NewsletterListCreateView.get" title="Link to this definition">¶</a></dt>
+<dd><p>Return a list of all newsletters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.NewsletterListCreateView.get_permissions">
+<span class="sig-name descname"><span class="pre">get_permissions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#NewsletterListCreateView.get_permissions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.NewsletterListCreateView.get_permissions" title="Link to this definition">¶</a></dt>
+<dd><p>Instantiates and returns the list of permissions that this view requires.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.NewsletterListCreateView.post">
+<span class="sig-name descname"><span class="pre">post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#NewsletterListCreateView.post"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.NewsletterListCreateView.post" title="Link to this definition">¶</a></dt>
+<dd><p>Create a new newsletter; author is forced to the current user.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.api_views.PublisherListView">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.api_views.</span></span><span class="sig-name descname"><span class="pre">PublisherListView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#PublisherListView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.PublisherListView" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>GET /api/publishers/ - List all publishers.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.PublisherListView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#PublisherListView.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.PublisherListView.get" title="Link to this definition">¶</a></dt>
+<dd><p>Return a list of all publishers.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.api_views.PublisherListView.permission_classes">
+<span class="sig-name descname"><span class="pre">permission_classes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;class</span> <span class="pre">'rest_framework.permissions.IsAuthenticated'&gt;]</span></span><a class="headerlink" href="#news.api_views.PublisherListView.permission_classes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.api_views.RegisterView">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.api_views.</span></span><span class="sig-name descname"><span class="pre">RegisterView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#RegisterView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.RegisterView" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>POST /api/register/ - Register a new user account.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.api_views.RegisterView.permission_classes">
+<span class="sig-name descname"><span class="pre">permission_classes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;class</span> <span class="pre">'rest_framework.permissions.AllowAny'&gt;]</span></span><a class="headerlink" href="#news.api_views.RegisterView.permission_classes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.RegisterView.post">
+<span class="sig-name descname"><span class="pre">post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#RegisterView.post"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.RegisterView.post" title="Link to this definition">¶</a></dt>
+<dd><p>Register a new user and return their public profile.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="news.api_views.SubscribedArticlesView">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">news.api_views.</span></span><span class="sig-name descname"><span class="pre">SubscribedArticlesView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#SubscribedArticlesView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.SubscribedArticlesView" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>GET /api/articles/subscribed/
+Return approved articles from the reader’s subscribed sources.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="news.api_views.SubscribedArticlesView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/api_views.html#SubscribedArticlesView.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.api_views.SubscribedArticlesView.get" title="Link to this definition">¶</a></dt>
+<dd><p>Return articles from the reader’s subscribed sources.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="news.api_views.SubscribedArticlesView.permission_classes">
+<span class="sig-name descname"><span class="pre">permission_classes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;class</span> <span class="pre">'rest_framework.permissions.IsAuthenticated'&gt;]</span></span><a class="headerlink" href="#news.api_views.SubscribedArticlesView.permission_classes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">NewsApp</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="models.html">news.models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="views.html">news.views</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">news.api_views</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#endpoints-implemented">Endpoints implemented</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.api_views.ApprovedArticleWebhookView"><code class="docutils literal notranslate"><span class="pre">ApprovedArticleWebhookView</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.api_views.ArticleApproveView"><code class="docutils literal notranslate"><span class="pre">ArticleApproveView</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.api_views.ArticleDetailView"><code class="docutils literal notranslate"><span class="pre">ArticleDetailView</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.api_views.ArticleListCreateView"><code class="docutils literal notranslate"><span class="pre">ArticleListCreateView</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.api_views.NewsletterDetailView"><code class="docutils literal notranslate"><span class="pre">NewsletterDetailView</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.api_views.NewsletterListCreateView"><code class="docutils literal notranslate"><span class="pre">NewsletterListCreateView</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.api_views.PublisherListView"><code class="docutils literal notranslate"><span class="pre">PublisherListView</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.api_views.RegisterView"><code class="docutils literal notranslate"><span class="pre">RegisterView</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.api_views.SubscribedArticlesView"><code class="docutils literal notranslate"><span class="pre">SubscribedArticlesView</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="serializers.html">news.serializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="permissions.html">news.permissions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forms.html">news.forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">news.signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="admin.html">news.admin</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="views.html" title="previous chapter">news.views</a></li>
+      <li>Next: <a href="serializers.html" title="next chapter">news.serializers</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Jerry Dickerson.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/modules/api_views.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
