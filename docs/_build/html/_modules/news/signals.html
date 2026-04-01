@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>news.signals &#8212; NewsApp 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for news.signals</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">signals.py - Django signal handlers for the News application.</span>
+
+<span class="sd">Two responsibilities</span>
+<span class="sd">--------------------</span>
+<span class="sd">1. assign_user_group (post_save on CustomUser)</span>
+<span class="sd">   Automatically adds the user to the correct Django auth Group</span>
+<span class="sd">   (Reader / Journalist / Editor) whenever a user is created or their</span>
+<span class="sd">   role changes. Groups and permissions are created here if they do not</span>
+<span class="sd">   yet exist.</span>
+
+<span class="sd">2. article_approved (post_save on Article)</span>
+<span class="sd">   Fires when an Article record is saved. When the article transitions</span>
+<span class="sd">   to approved=True for the FIRST TIME, this handler:</span>
+
+<span class="sd">   a) Emails every subscriber of the article&#39;s journalist or publisher.</span>
+<span class="sd">   b) POSTs the approved article payload to /api/approved/ for logging.</span>
+
+<span class="sd">   The handler tracks first-time approval using the &#39;created&#39; flag and</span>
+<span class="sd">   by comparing against the pre-save value stored in the instance to</span>
+<span class="sd">   avoid sending duplicate emails on subsequent saves of already-approved</span>
+<span class="sd">   articles (e.g. minor edits by an editor).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.contrib.auth.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Group</span><span class="p">,</span> <span class="n">Permission</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.contrib.contenttypes.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContentType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.core.mail</span><span class="w"> </span><span class="kn">import</span> <span class="n">send_mail</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models.signals</span><span class="w"> </span><span class="kn">import</span> <span class="n">post_save</span><span class="p">,</span> <span class="n">pre_save</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">receiver</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Article</span><span class="p">,</span> <span class="n">CustomUser</span><span class="p">,</span> <span class="n">Newsletter</span><span class="p">,</span> <span class="n">Role</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Module-level set tracking article PKs that were already approved BEFORE</span>
+<span class="c1"># the current save. Populated by the pre_save signal and consumed by</span>
+<span class="c1"># post_save to detect first-time approval transitions.</span>
+<span class="c1"># Using a set is O(1) for both add and discard operations.</span>
+<span class="n">_already_approved_pks</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Helper: build Permission querysets for a given model</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_article_permissions</span><span class="p">(</span><span class="n">codenames</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return Permission queryset for the Article model filtered by codenames.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codenames: Iterable of permission codenames, e.g. [&#39;view_article&#39;].</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A Permission queryset for Article content-type permissions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">article_content_type</span> <span class="o">=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get_for_model</span><span class="p">(</span><span class="n">Article</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Permission</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">content_type</span><span class="o">=</span><span class="n">article_content_type</span><span class="p">,</span>
+        <span class="n">codename__in</span><span class="o">=</span><span class="n">codenames</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_newsletter_permissions</span><span class="p">(</span><span class="n">codenames</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return Permission queryset for the Newsletter model filtered by codenames.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codenames: Iterable of permission codenames, e.g. [&#39;view_newsletter&#39;].</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A Permission queryset for Newsletter content-type permissions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">newsletter_content_type</span> <span class="o">=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get_for_model</span><span class="p">(</span><span class="n">Newsletter</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Permission</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">content_type</span><span class="o">=</span><span class="n">newsletter_content_type</span><span class="p">,</span>
+        <span class="n">codename__in</span><span class="o">=</span><span class="n">codenames</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="setup_groups">
+<a class="viewcode-back" href="../../modules/signals.html#news.signals.setup_groups">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_groups</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Idempotently create the three role-based Groups and assign permissions.</span>
+
+<span class="sd">    This function is safe to call multiple times; get_or_create ensures</span>
+<span class="sd">    no duplicate groups are created. It is called:</span>
+
+<span class="sd">    - By the management command ``setup_news_groups``.</span>
+<span class="sd">    - By the assign_user_group signal on every user save (via try/except).</span>
+<span class="sd">    - By register_view after a new user is created.</span>
+
+<span class="sd">    Permission layout:</span>
+
+<span class="sd">    - Reader: view only (no content creation or modification)</span>
+<span class="sd">    - Editor: view, change, delete (approve workflow, no article creation)</span>
+<span class="sd">    - Journalist: view, add, change, delete (full CRUD on own content)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># -- Reader group: view-only permissions ---------------------------------</span>
+    <span class="n">reader_group</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">Group</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get_or_create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Reader&#39;</span><span class="p">)</span>
+    <span class="n">reader_permissions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">_get_article_permissions</span><span class="p">([</span><span class="s1">&#39;view_article&#39;</span><span class="p">]))</span>
+        <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">_get_newsletter_permissions</span><span class="p">([</span><span class="s1">&#39;view_newsletter&#39;</span><span class="p">]))</span>
+    <span class="p">)</span>
+    <span class="n">reader_group</span><span class="o">.</span><span class="n">permissions</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">reader_permissions</span><span class="p">)</span>
+
+    <span class="c1"># -- Editor group: view + change + delete (no add_article) ---------------</span>
+    <span class="n">editor_group</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">Group</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get_or_create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Editor&#39;</span><span class="p">)</span>
+    <span class="n">editor_permissions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">_get_article_permissions</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;view_article&#39;</span><span class="p">,</span> <span class="s1">&#39;change_article&#39;</span><span class="p">,</span> <span class="s1">&#39;delete_article&#39;</span><span class="p">]</span>
+        <span class="p">))</span>
+        <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">_get_newsletter_permissions</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;view_newsletter&#39;</span><span class="p">,</span> <span class="s1">&#39;change_newsletter&#39;</span><span class="p">,</span> <span class="s1">&#39;delete_newsletter&#39;</span><span class="p">]</span>
+        <span class="p">))</span>
+    <span class="p">)</span>
+    <span class="n">editor_group</span><span class="o">.</span><span class="n">permissions</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">editor_permissions</span><span class="p">)</span>
+
+    <span class="c1"># -- Journalist group: full CRUD on articles and newsletters -------------</span>
+    <span class="n">journalist_group</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">Group</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get_or_create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Journalist&#39;</span><span class="p">)</span>
+    <span class="n">journalist_permissions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">_get_article_permissions</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;view_article&#39;</span><span class="p">,</span> <span class="s1">&#39;add_article&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;change_article&#39;</span><span class="p">,</span> <span class="s1">&#39;delete_article&#39;</span><span class="p">]</span>
+        <span class="p">))</span>
+        <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">_get_newsletter_permissions</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;view_newsletter&#39;</span><span class="p">,</span> <span class="s1">&#39;add_newsletter&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;change_newsletter&#39;</span><span class="p">,</span> <span class="s1">&#39;delete_newsletter&#39;</span><span class="p">]</span>
+        <span class="p">))</span>
+    <span class="p">)</span>
+    <span class="n">journalist_group</span><span class="o">.</span><span class="n">permissions</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">journalist_permissions</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Signal 1: Track pre-save approval state (REQ 1 - logical error fix)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="track_pre_save_approval">
+<a class="viewcode-back" href="../../modules/signals.html#news.signals.track_pre_save_approval">[docs]</a>
+<span class="nd">@receiver</span><span class="p">(</span><span class="n">pre_save</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="n">Article</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">track_pre_save_approval</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Before an Article is saved, record whether it was already approved.</span>
+
+<span class="sd">    This pre_save hook populates _already_approved_pks with the PK of</span>
+<span class="sd">    any Article that is already approved in the database. The post_save</span>
+<span class="sd">    handler uses this to detect first-time approval transitions and</span>
+<span class="sd">    avoid firing duplicate emails on re-saves of approved articles.</span>
+
+<span class="sd">    New articles (pk is None) are never in _already_approved_pks.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">instance</span><span class="o">.</span><span class="n">pk</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Brand-new article - cannot be pre-approved</span>
+        <span class="k">return</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Fetch only the &#39;approved&#39; field to minimise DB overhead</span>
+        <span class="n">current_approved</span> <span class="o">=</span> <span class="n">Article</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">pk</span><span class="o">=</span><span class="n">instance</span><span class="o">.</span><span class="n">pk</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">values_list</span><span class="p">(</span><span class="s1">&#39;approved&#39;</span><span class="p">,</span> <span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">current_approved</span><span class="p">:</span>
+            <span class="c1"># Was already approved before this save - track its PK</span>
+            <span class="n">_already_approved_pks</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Not yet approved before this save - ensure it is not tracked</span>
+            <span class="n">_already_approved_pks</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">lookup_error</span><span class="p">:</span>
+        <span class="c1"># Non-fatal: if we cannot determine previous state, err on the</span>
+        <span class="c1"># side of not sending emails to avoid duplicate notifications.</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Could not determine pre-save approval for article pk=</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">,</span>
+            <span class="n">lookup_error</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">_already_approved_pks</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Signal 2: Assign user to the correct Group after save</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="assign_user_group">
+<a class="viewcode-back" href="../../modules/signals.html#news.signals.assign_user_group">[docs]</a>
+<span class="nd">@receiver</span><span class="p">(</span><span class="n">post_save</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="n">CustomUser</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">assign_user_group</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">created</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Assign the saved user to the Django auth Group matching their role.</span>
+
+<span class="sd">    The user is removed from all other role groups first so that role</span>
+<span class="sd">    changes (e.g. Reader -&gt; Journalist) are reflected immediately.</span>
+
+<span class="sd">    setup_groups() is called inside a try/except because it may fail</span>
+<span class="sd">    during the initial database migration when content types are not</span>
+<span class="sd">    yet available.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Maps each role value to its corresponding group name</span>
+    <span class="n">role_to_group_name</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">Role</span><span class="o">.</span><span class="n">READER</span><span class="p">:</span> <span class="s1">&#39;Reader&#39;</span><span class="p">,</span>
+        <span class="n">Role</span><span class="o">.</span><span class="n">JOURNALIST</span><span class="p">:</span> <span class="s1">&#39;Journalist&#39;</span><span class="p">,</span>
+        <span class="n">Role</span><span class="o">.</span><span class="n">EDITOR</span><span class="p">:</span> <span class="s1">&#39;Editor&#39;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">target_group_name</span> <span class="o">=</span> <span class="n">role_to_group_name</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">role</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">target_group_name</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Unknown role &#39;</span><span class="si">%s</span><span class="s2">&#39; for user &#39;</span><span class="si">%s</span><span class="s2">&#39;; no group assigned.&quot;</span><span class="p">,</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">role</span><span class="p">,</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Ensure groups and permissions exist before assigning</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">setup_groups</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">setup_error</span><span class="p">:</span>
+        <span class="c1"># setup_groups may fail during early migrations - log and return</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;setup_groups() skipped in signal: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">setup_error</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Remove from all role groups then add to the correct one</span>
+    <span class="n">all_role_groups</span> <span class="o">=</span> <span class="n">Group</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">name__in</span><span class="o">=</span><span class="n">role_to_group_name</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">instance</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="o">*</span><span class="n">all_role_groups</span><span class="p">)</span>
+
+    <span class="n">target_group</span> <span class="o">=</span> <span class="n">Group</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">target_group_name</span><span class="p">)</span>
+    <span class="n">instance</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">target_group</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="s2">&quot;User &#39;</span><span class="si">%s</span><span class="s2">&#39; assigned to group &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+        <span class="n">target_group_name</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Signal 3: Handle first-time article approval</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="article_approved">
+<a class="viewcode-back" href="../../modules/signals.html#news.signals.article_approved">[docs]</a>
+<span class="nd">@receiver</span><span class="p">(</span><span class="n">post_save</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="n">Article</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">article_approved</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">created</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fire subscriber notifications only when an article is approved</span>
+<span class="sd">    for the FIRST TIME.</span>
+
+<span class="sd">    Logic:</span>
+<span class="sd">      - If the article is not approved, do nothing.</span>
+<span class="sd">      - If the article&#39;s PK was in _already_approved_pks (meaning it was</span>
+<span class="sd">        already approved before this save), do nothing. This prevents</span>
+<span class="sd">        duplicate emails from editor re-saves of published articles.</span>
+<span class="sd">      - Otherwise (first-time approval), notify subscribers and log.</span>
+
+<span class="sd">    The PK is removed from _already_approved_pks after handling so the</span>
+<span class="sd">    set does not grow unboundedly.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">instance</span><span class="o">.</span><span class="n">approved</span><span class="p">:</span>
+        <span class="c1"># Article is not approved - nothing to do</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="n">instance</span><span class="o">.</span><span class="n">pk</span> <span class="ow">in</span> <span class="n">_already_approved_pks</span><span class="p">:</span>
+        <span class="c1"># Article was already approved before this save - skip to avoid</span>
+        <span class="c1"># sending duplicate emails on subsequent edits of live articles.</span>
+        <span class="n">_already_approved_pks</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;Skipping approval signal for already-approved article pk=</span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># First-time approval: notify subscribers and log the event</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="s2">&quot;Article &#39;</span><span class="si">%s</span><span class="s2">&#39; (pk=</span><span class="si">%s</span><span class="s2">) approved for first time — notifying.&quot;</span><span class="p">,</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">_notify_subscribers</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
+    <span class="n">_post_to_approved_endpoint</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Helper: collect subscriber email addresses</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_collect_subscriber_emails</span><span class="p">(</span><span class="n">article</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a deduplicated list of email addresses for all users subscribed</span>
+<span class="sd">    to either the article&#39;s author (journalist) or its publisher.</span>
+
+<span class="sd">    Uses a single combined query with Q objects rather than two separate</span>
+<span class="sd">    querysets to minimise database round-trips (REQ 4 - efficiency).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        article: The approved Article instance.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of non-empty email address strings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">django.contrib.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_user_model</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Q</span>
+
+    <span class="n">User</span> <span class="o">=</span> <span class="n">get_user_model</span><span class="p">()</span>
+
+    <span class="c1"># Build filter conditions dynamically to handle articles with no publisher</span>
+    <span class="n">subscription_filter</span> <span class="o">=</span> <span class="n">Q</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">author_id</span><span class="p">:</span>
+        <span class="c1"># Readers who follow this journalist</span>
+        <span class="n">subscription_filter</span> <span class="o">|=</span> <span class="n">Q</span><span class="p">(</span><span class="n">subscribed_journalists</span><span class="o">=</span><span class="n">article</span><span class="o">.</span><span class="n">author</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">publisher_id</span><span class="p">:</span>
+        <span class="c1"># Readers subscribed to this publisher</span>
+        <span class="n">subscription_filter</span> <span class="o">|=</span> <span class="n">Q</span><span class="p">(</span><span class="n">subscribed_publishers</span><span class="o">=</span><span class="n">article</span><span class="o">.</span><span class="n">publisher</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">subscription_filter</span><span class="p">:</span>
+        <span class="c1"># Neither author nor publisher is set - no subscribers possible</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="c1"># Single query combining both subscription types with deduplication</span>
+    <span class="n">subscriber_emails</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">subscription_filter</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">exclude</span><span class="p">(</span><span class="n">email</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">values_list</span><span class="p">(</span><span class="s1">&#39;email&#39;</span><span class="p">,</span> <span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">distinct</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">subscriber_emails</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Helper: send email notifications to subscribers</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_notify_subscribers</span><span class="p">(</span><span class="n">article</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Send an email notification to every subscriber of the approved article.</span>
+
+<span class="sd">    Constructs a plain-text email containing the article title and author,</span>
+<span class="sd">    then sends it to the collected subscriber email list.</span>
+<span class="sd">    If no subscribers exist, logs the fact and returns without sending.</span>
+<span class="sd">    Any send_mail exception is caught and logged so that an email failure</span>
+<span class="sd">    does not crash the approval workflow.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">recipient_emails</span> <span class="o">=</span> <span class="n">_collect_subscriber_emails</span><span class="p">(</span><span class="n">article</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">recipient_emails</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;No subscribers to notify for article &#39;</span><span class="si">%s</span><span class="s2">&#39; (pk=</span><span class="si">%s</span><span class="s2">).&quot;</span><span class="p">,</span>
+            <span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">article</span><span class="o">.</span><span class="n">pk</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Build a human-readable author display name</span>
+    <span class="n">author_display_name</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">article</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">get_full_name</span><span class="p">()</span> <span class="ow">or</span> <span class="n">article</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">username</span>
+    <span class="p">)</span>
+
+    <span class="n">email_subject</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;New Article Published: </span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">email_body</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;A new article has been published:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;Title  : </span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;Author : </span><span class="si">{</span><span class="n">author_display_name</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;Log in to read the full article.&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">send_mail</span><span class="p">(</span>
+            <span class="n">subject</span><span class="o">=</span><span class="n">email_subject</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">email_body</span><span class="p">,</span>
+            <span class="n">from_email</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># uses DEFAULT_FROM_EMAIL from settings.py</span>
+            <span class="n">recipient_list</span><span class="o">=</span><span class="n">recipient_emails</span><span class="p">,</span>
+            <span class="n">fail_silently</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Approval email sent for article &#39;</span><span class="si">%s</span><span class="s2">&#39; to </span><span class="si">%d</span><span class="s2"> subscriber(s).&quot;</span><span class="p">,</span>
+            <span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">recipient_emails</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">email_error</span><span class="p">:</span>
+        <span class="c1"># Log the error but do not re-raise - a failed email must not</span>
+        <span class="c1"># prevent the article from being marked as approved in the DB.</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="s2">&quot;Failed to send approval email for article &#39;</span><span class="si">%s</span><span class="s2">&#39; (pk=</span><span class="si">%s</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">article</span><span class="o">.</span><span class="n">pk</span><span class="p">,</span>
+            <span class="n">email_error</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Helper: POST approved article details to internal API endpoint</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_post_to_approved_endpoint</span><span class="p">(</span><span class="n">article</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    POST the approved article&#39;s details to /api/approved/ for logging.</span>
+
+<span class="sd">    This simulates notifying an external service when an article goes live.</span>
+<span class="sd">    The call is made with a short timeout and all exceptions are caught so</span>
+<span class="sd">    that a network failure does not crash the approval workflow.</span>
+
+<span class="sd">    Note: In production this should be moved to a background task (e.g.</span>
+<span class="sd">    Celery) to avoid blocking the request/response cycle. The synchronous</span>
+<span class="sd">    call here is acceptable for the development/demo context of this project.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>  <span class="c1"># imported here to avoid circular import issues</span>
+
+        <span class="c1"># Determine publisher name safely (publisher is nullable)</span>
+        <span class="n">publisher_name</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">article</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">publisher</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Build the payload matching ArticleApprovalSerializer fields</span>
+        <span class="n">approval_payload</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;article_id&#39;</span><span class="p">:</span> <span class="n">article</span><span class="o">.</span><span class="n">pk</span><span class="p">,</span>
+            <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="s1">&#39;author&#39;</span><span class="p">:</span> <span class="n">article</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+            <span class="s1">&#39;publisher&#39;</span><span class="p">:</span> <span class="n">publisher_name</span><span class="p">,</span>
+            <span class="s1">&#39;approved&#39;</span><span class="p">:</span> <span class="n">article</span><span class="o">.</span><span class="n">approved</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="s1">&#39;http://127.0.0.1:8000/api/approved/&#39;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">approval_payload</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>  <span class="c1"># seconds - prevent hanging on slow/unavailable server</span>
+        <span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Successfully POSTed article &#39;</span><span class="si">%s</span><span class="s2">&#39; (pk=</span><span class="si">%s</span><span class="s2">) to /api/approved/.&quot;</span><span class="p">,</span>
+            <span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">article</span><span class="o">.</span><span class="n">pk</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;&#39;requests&#39; library not installed; skipping /api/approved/ POST.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">request_error</span><span class="p">:</span>
+        <span class="c1"># Log but do not re-raise - a failed webhook must not prevent</span>
+        <span class="c1"># the article approval from completing successfully.</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="s2">&quot;Failed to POST article &#39;</span><span class="si">%s</span><span class="s2">&#39; (pk=</span><span class="si">%s</span><span class="s2">) to /api/approved/: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">article</span><span class="o">.</span><span class="n">pk</span><span class="p">,</span>
+            <span class="n">request_error</span><span class="p">,</span>
+        <span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">NewsApp</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/models.html">news.models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/views.html">news.views</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/api_views.html">news.api_views</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/serializers.html">news.serializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/permissions.html">news.permissions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/forms.html">news.forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/signals.html">news.signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/admin.html">news.admin</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Jerry Dickerson.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>news.views &#8212; NewsApp 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="news.api_views" href="api_views.html" />
+    <link rel="prev" title="news.models" href="models.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-news.views">
+<span id="news-views"></span><h1>news.views<a class="headerlink" href="#module-news.views" title="Link to this heading">¶</a></h1>
+<p>views.py - Web UI views for the News application.</p>
+<dl class="simple">
+<dt>Provides template-based views for:</dt><dd><ul class="simple">
+<li><p>User registration and login/logout</p></li>
+<li><p>Article browsing, detail, creation, and editing</p></li>
+<li><p>Editor article-approval dashboard</p></li>
+<li><p>Newsletter browsing, creation, editing, and deletion</p></li>
+<li><p>Publisher listing, creation, and editing</p></li>
+<li><p>Subscription toggling (readers only)</p></li>
+</ul>
+</dd>
+</dl>
+<section id="defensive-coding-conventions-used-throughout">
+<h2>Defensive coding conventions used throughout<a class="headerlink" href="#defensive-coding-conventions-used-throughout" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>All user input is validated through Django forms before saving.</p></li>
+<li><p>Role guards use &#64;user_passes_test to reject unauthorised access early.</p></li>
+<li><p>Ownership checks are centralised in helpers to avoid duplication.</p></li>
+<li><p>The ?next= redirect parameter is validated against a safe-URL whitelist
+to prevent open-redirect attacks.</p></li>
+<li><p>All DB lookups use get_object_or_404 to handle missing records cleanly.</p></li>
+</ul>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.approve_article_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">approve_article_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#approve_article_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.approve_article_view" title="Link to this definition">¶</a></dt>
+<dd><p>POST endpoint allowing an editor to approve a pending article.</p>
+<p>Saving the article with approved=True triggers the post_save signal
+in signals.py, which emails subscribers and notifies the API.
+A warning is displayed on double-approval attempts (e.g. browser
+back-button) to prevent duplicate signal fires.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.article_detail_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">article_detail_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#article_detail_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.article_detail_view" title="Link to this definition">¶</a></dt>
+<dd><p>Display a single article by primary key.</p>
+<p>Readers who attempt to access an unapproved article receive an
+informative error message and are redirected rather than seeing
+a misleading 404 or a raw permission error.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.create_article_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">create_article_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#create_article_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.create_article_view" title="Link to this definition">¶</a></dt>
+<dd><p>Allow a journalist to submit a new article for editor review.</p>
+<p>The author field is always set to the current user regardless of
+any value that might be present in the POST data, enforcing that
+journalists can only author articles under their own name.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.create_newsletter_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">create_newsletter_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#create_newsletter_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.create_newsletter_view" title="Link to this definition">¶</a></dt>
+<dd><p>Allow journalists and editors to create a newsletter.</p>
+<p>The author is always forced to the current user.
+form.save_m2m() must be called explicitly after save(commit=False)
+to persist the ManyToMany ‘articles’ relationship.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.create_publisher_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">create_publisher_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#create_publisher_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.create_publisher_view" title="Link to this definition">¶</a></dt>
+<dd><p>Allow editors to create a new publisher organisation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.delete_newsletter_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">delete_newsletter_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#delete_newsletter_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.delete_newsletter_view" title="Link to this definition">¶</a></dt>
+<dd><p>Allow a journalist (owner) or editor to delete a newsletter.</p>
+<p>GET  - Renders a confirmation page before the irreversible delete.
+POST - Performs the deletion and redirects with a success message.</p>
+<p>The newsletter title is captured before deletion so it can still
+be referenced in the success message after the object is gone.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.edit_article_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">edit_article_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#edit_article_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.edit_article_view" title="Link to this definition">¶</a></dt>
+<dd><p>Allow a journalist (owner) or editor to edit an existing article.</p>
+<p>Journalist-specific access restrictions are validated through
+<code class="docutils literal notranslate"><span class="pre">_check_journalist_article_access()</span></code>, which checks:</p>
+<ul class="simple">
+<li><p>The journalist must be the article’s author.</p></li>
+<li><p>The article must not yet be approved (published).</p></li>
+</ul>
+<p>These checks are centralised in the helper to keep this view concise.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.edit_newsletter_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">edit_newsletter_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#edit_newsletter_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.edit_newsletter_view" title="Link to this definition">¶</a></dt>
+<dd><p>Allow a journalist (owner) or editor to edit a newsletter.</p>
+<p>Journalist ownership is validated through
+_check_journalist_newsletter_access(),
+keeping the ownership rule in one place and this view concise.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.edit_publisher_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">edit_publisher_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#edit_publisher_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.edit_publisher_view" title="Link to this definition">¶</a></dt>
+<dd><p>Allow editors to update the details of an existing publisher.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.editor_dashboard_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">editor_dashboard_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#editor_dashboard_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.editor_dashboard_view" title="Link to this definition">¶</a></dt>
+<dd><p>Editor-only dashboard listing articles that are pending approval.</p>
+<p>Articles are ordered oldest-first (ascending created_at) so that the
+submissions that have been waiting longest appear at the top.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.home_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">home_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#home_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.home_view" title="Link to this definition">¶</a></dt>
+<dd><p>Landing page displaying a list of articles.</p>
+<ul class="simple">
+<li><p>Readers see only approved (published) articles.</p></li>
+<li><p>Journalists and editors see all articles including pending drafts.</p></li>
+<li><p>Results are ordered newest-first in both cases.</p></li>
+<li><p>select_related() prefetches the author and publisher in the same
+query to avoid N+1 database hits in the template loop.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.login_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">login_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#login_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.login_view" title="Link to this definition">¶</a></dt>
+<dd><p>Display and process the login form.</p>
+<dl class="simple">
+<dt>Input validation:</dt><dd><ul class="simple">
+<li><p>Both username and password must be non-empty strings.</p></li>
+<li><p>The ?next= parameter is sanitised via _safe_redirect_url() to
+prevent open-redirect attacks.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.logout_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">logout_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#logout_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.logout_view" title="Link to this definition">¶</a></dt>
+<dd><p>Log out the current user and redirect to the login page.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.newsletter_detail_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">newsletter_detail_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#newsletter_detail_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.newsletter_detail_view" title="Link to this definition">¶</a></dt>
+<dd><p>Display a single newsletter with its associated articles.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.newsletter_list_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">newsletter_list_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#newsletter_list_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.newsletter_list_view" title="Link to this definition">¶</a></dt>
+<dd><p>Display all newsletters to any authenticated user.
+prefetch_related() avoids N+1 queries when the template lists articles
+within each newsletter.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.publisher_list_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">publisher_list_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#publisher_list_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.publisher_list_view" title="Link to this definition">¶</a></dt>
+<dd><p>Display all publishers alphabetically.
+Readers can subscribe or unsubscribe directly from this view.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.register_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">register_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#register_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.register_view" title="Link to this definition">¶</a></dt>
+<dd><p>Display and process the user registration form.</p>
+<p>On success the user is logged in and redirected to the article list.
+setup_groups() is wrapped in a try/except so a group-creation failure
+(e.g. during early migrations in testing) does not prevent registration.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.subscribe_journalist_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">subscribe_journalist_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#subscribe_journalist_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.subscribe_journalist_view" title="Link to this definition">¶</a></dt>
+<dd><p>Allow a reader to toggle their subscription (follow) to a journalist.</p>
+<p>Non-reader roles receive an informative error.
+get_object_or_404 restricts the lookup to users with a JOURNALIST role,
+preventing readers from following editors or other readers.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="news.views.subscribe_publisher_view">
+<span class="sig-prename descclassname"><span class="pre">news.views.</span></span><span class="sig-name descname"><span class="pre">subscribe_publisher_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/news/views.html#subscribe_publisher_view"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#news.views.subscribe_publisher_view" title="Link to this definition">¶</a></dt>
+<dd><p>Allow a reader to toggle their subscription to a publisher.</p>
+<p>Non-reader roles receive an informative error rather than a generic
+permission denial, making the restriction clear to the user.
+The subscription state is toggled: subscribing again unsubscribes.</p>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">NewsApp</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="models.html">news.models</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">news.views</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#defensive-coding-conventions-used-throughout">Defensive coding conventions used throughout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.approve_article_view"><code class="docutils literal notranslate"><span class="pre">approve_article_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.article_detail_view"><code class="docutils literal notranslate"><span class="pre">article_detail_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.create_article_view"><code class="docutils literal notranslate"><span class="pre">create_article_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.create_newsletter_view"><code class="docutils literal notranslate"><span class="pre">create_newsletter_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.create_publisher_view"><code class="docutils literal notranslate"><span class="pre">create_publisher_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.delete_newsletter_view"><code class="docutils literal notranslate"><span class="pre">delete_newsletter_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.edit_article_view"><code class="docutils literal notranslate"><span class="pre">edit_article_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.edit_newsletter_view"><code class="docutils literal notranslate"><span class="pre">edit_newsletter_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.edit_publisher_view"><code class="docutils literal notranslate"><span class="pre">edit_publisher_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.editor_dashboard_view"><code class="docutils literal notranslate"><span class="pre">editor_dashboard_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.home_view"><code class="docutils literal notranslate"><span class="pre">home_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.login_view"><code class="docutils literal notranslate"><span class="pre">login_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.logout_view"><code class="docutils literal notranslate"><span class="pre">logout_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.newsletter_detail_view"><code class="docutils literal notranslate"><span class="pre">newsletter_detail_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.newsletter_list_view"><code class="docutils literal notranslate"><span class="pre">newsletter_list_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.publisher_list_view"><code class="docutils literal notranslate"><span class="pre">publisher_list_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.register_view"><code class="docutils literal notranslate"><span class="pre">register_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.subscribe_journalist_view"><code class="docutils literal notranslate"><span class="pre">subscribe_journalist_view()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#news.views.subscribe_publisher_view"><code class="docutils literal notranslate"><span class="pre">subscribe_publisher_view()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api_views.html">news.api_views</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serializers.html">news.serializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="permissions.html">news.permissions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forms.html">news.forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">news.signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="admin.html">news.admin</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="models.html" title="previous chapter">news.models</a></li>
+      <li>Next: <a href="api_views.html" title="next chapter">news.api_views</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Jerry Dickerson.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/modules/views.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
